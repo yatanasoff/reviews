@@ -1,22 +1,12 @@
-"""
-Test
-
-curl -X POST -H "Content-Type: application/json" -d '{"text":"хороший запах"}' http://127.0.0.1:8000/reviews
-curl -X POST -H "Content-Type: application/json" -d '{"text":"мне нравится"}' http://127.0.0.1:8000/reviews
-curl -X POST -H "Content-Type: application/json" -d '{"text":"ненавижу запах"}' http://127.0.0.1:8000/reviews
-curl  http://127.0.0.1:8000/reviews
-
-"""
-
 import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, HTTPException
 from peewee import *
 from pydantic import BaseModel
 
-db = SqliteDatabase('reviews.db', check_same_thread=False)
+db = SqliteDatabase("reviews.db", check_same_thread=False)
 
 
 class ReviewPydantic(BaseModel):
@@ -57,11 +47,26 @@ async def create_reviews(review: ReviewPydantic):
         sentiment = "negative"
     else:
         sentiment = "neutral"
-    r = Review(text=review.text, sentiment=sentiment, created_at=datetime.datetime.now())
+    r = Review(
+        text=review.text, sentiment=sentiment, created_at=datetime.datetime.now()
+    )
     r.save()
     return True
 
 
 @app.get("/reviews")
-async def read_reviews():
-    return [{"id": r.id, "text": r.text, "sentiment": r.sentiment, "created_at": r.created_at} for r in Review.select()]
+async def read_reviews(sentiment: str | None = None):
+    query = Review.select()
+    if sentiment is not None:
+        if sentiment not in ["neutral", "positive", "negative"]:
+            raise HTTPException(status_code=422, detail="invalid filter value")
+        query = query.where(Review.sentiment == sentiment)
+    return [
+        {
+            "id": r.id,
+            "text": r.text,
+            "sentiment": r.sentiment,
+            "created_at": r.created_at,
+        }
+        for r in query
+    ]
