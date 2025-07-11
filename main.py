@@ -22,6 +22,7 @@ class Review(Model):
 
     class Meta:
         database = db
+        db_table = "reviews"
 
 
 @asynccontextmanager
@@ -48,7 +49,7 @@ async def create_reviews(review: ReviewPydantic):
     else:
         sentiment = "neutral"
     r = Review(
-        text=review.text, sentiment=sentiment, created_at= datetime.utcnow().isoformat()
+        text=review.text, sentiment=sentiment, created_at=datetime.utcnow().isoformat()
     )
     r.save()
     return True
