@@ -48,7 +48,7 @@ async def create_reviews(review: ReviewPydantic):
     else:
         sentiment = "neutral"
     r = Review(
-        text=review.text, sentiment=sentiment, created_at=datetime.datetime.now()
+        text=review.text, sentiment=sentiment, created_at= datetime.utcnow().isoformat()
     )
     r.save()
     return True
